@@ -1,3 +1,5 @@
+#include <can_common.h>
+
 #include "commbuffer.h"
 #include "Logger.h"
 #include "gvret_comm.h"

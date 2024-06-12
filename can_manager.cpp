@@ -5,7 +5,6 @@
 #include "SerialConsole.h"
 #include "gvret_comm.h"
 #include "lawicel.h"
-#include "ELM327_Emulator.h"
 
 CANManager::CANManager()
 {
@@ -23,16 +22,6 @@ void CANManager::setup()
             {
                 canBuses[i]->begin(settings.canSettings[i].nomSpeed, 255);
                 Serial.printf("Enabled CAN%u with speed %u\n", i, settings.canSettings[i].nomSpeed);
-                if ( (i == 0) && (settings.systemType == 2) )
-                {
-                  digitalWrite(SW_EN, HIGH); //MUST be HIGH to use CAN0 channel
-                  Serial.println("Enabling SWCAN Mode");
-                }
-                if ( (i == 1) && (settings.systemType == 2) )
-                {
-                  digitalWrite(SW_EN, LOW); //MUST be LOW to use CAN1 channel
-                  Serial.println("Enabling CAN1 will force CAN0 off.");
-                }
             }
             else
             {
@@ -54,22 +43,6 @@ void CANManager::setup()
         else
         {
             canBuses[i]->disable();
-        }
-    }
-
-    if (settings.systemType == 2) //Macchina 5-CAN Board
-    {
-        uint8_t stdbymode;
-        //need to set all MCP2517FD modules to use GPIO0 as XSTBY to control transceivers
-        for (int i = 1; i < 5; i++)
-        {
-            MCP2517FD *can = (MCP2517FD *)canBuses[i];
-            stdbymode = can->Read8(0xE04);
-            stdbymode |= 0x40; // Set bit 6 to enable XSTBY mode
-            can->Write8(0xE04, stdbymode);
-            stdbymode = can->Read8(0xE04);
-            stdbymode &= 0xFE; // clear low bit so GPIO0 is output
-            can->Write8(0xE04, stdbymode);
         }
     }
 
@@ -184,7 +157,6 @@ void CANManager::loop()
                 displayFrame(inFD, i);
             }
             toggleRXLED();
-            if ( (incoming.id > 0x7DF && incoming.id < 0x7F0) || elmEmulator.getMonitorMode() ) elmEmulator.processCANReply(incoming);
             wifiLength = wifiGVRET.numAvailableBytes();
             serialLength = serialGVRET.numAvailableBytes();
             maxLength = (wifiLength > serialLength) ? wifiLength:serialLength;

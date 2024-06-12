@@ -1,3 +1,5 @@
+#include <esp32_can.h>
+
 /*
  * config.h
  *
